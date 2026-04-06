@@ -18,14 +18,7 @@ export function NewsCard({ item }: Props) {
   return (
     <article className="border-b border-neutral-200 py-3 last:border-b-0">
       <h2 className="text-sm font-medium leading-snug text-neutral-900">
-        <a
-          href={item.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-inherit hover:underline"
-        >
-          {item.title}
-        </a>
+        {item.title}
       </h2>
       {time ? (
         <p className="mt-1 text-xs text-neutral-500">{time}</p>
@@ -45,16 +38,7 @@ export function NewsCard({ item }: Props) {
         </details>
       ) : (
         <p className="mt-1.5 text-[11px] text-neutral-500">
-          本文を取得できませんでした（
-          <a
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline"
-          >
-            Yahoo!で読む
-          </a>
-          ）
+          本文を取得できませんでした。
         </p>
       )}
     </article>

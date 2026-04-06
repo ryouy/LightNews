@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Newslight — Yahoo!ニュース",
   description:
-    "通信量を抑えた Yahoo!ニュース一覧。広告・余計なスクリプトなしで閲覧できます。",
+    "軽量Yahoo!ニュース一覧",
 };
 
 export default function RootLayout({

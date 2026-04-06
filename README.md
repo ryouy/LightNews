@@ -12,3 +12,5 @@ npm run dev
 **Vercel**
 
 Connect the repo and deploy—the default Next.js preset is enough. No env vars required.
+
+**Root Directory:** leave empty (repo root). Only set a subfolder if the app lives inside one (e.g. monorepo).
