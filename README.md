@@ -1,15 +1,14 @@
 # newslight
 
-Yahoo!ニュースを軽量表示する Next.js アプリ（主要 / 国内 / 国際 / IT）。
+Lightweight Yahoo News reader (Next.js). Categories: top, domestic, world, IT.
+
+**Local**
 
 ```bash
 npm install
 npm run dev
 ```
 
-`http://localhost:3000` で開く
+**Vercel**
 
-```bash
-npm run build
-npm start
-```
+Connect the repo and deploy—the default Next.js preset is enough. No env vars required.
