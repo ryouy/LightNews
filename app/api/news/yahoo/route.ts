@@ -12,10 +12,10 @@ export const maxDuration = 60;
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const q = (searchParams.get("q") ?? searchParams.get("search") ?? "").trim();
-  const rawCat = searchParams.get("category") ?? "top";
+  const rawCat = searchParams.get("category") ?? "world";
   const category: YahooNewsCategory = isYahooNewsCategory(rawCat)
     ? rawCat
-    : "top";
+    : "world";
 
   try {
     const data =

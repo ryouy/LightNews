@@ -16,7 +16,7 @@ export const CATEGORY_TABS: {
   { key: "world", label: "国際", path: "/world" },
   { key: "domestic", label: "国内", path: "/domestic" },
   { key: "it", label: "IT", path: "/it" },
-  { key: "top", label: "主要", path: "/" },
+  { key: "top", label: "主要", path: "/top" },
 ];
 
 export function isYahooNewsCategory(s: string): s is YahooNewsCategory {

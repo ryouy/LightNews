@@ -1,6 +1,12 @@
 # Newslight
 
-A minimal web app for **Yahoo! News** and **Weathernews**—built for clarity on slow or costly links. No hero shots, no custom illustration stack: just type, spacing, and the facts you asked for.
+**Yahoo! News** and **Weathernews** in one small web app—made to load on bad connections. No hero images, no extra decoration: text and layout only.
+
+## Why this exists
+
+At home I don’t have wired internet. I use a cheap phone SIM ([POVO](https://povo.jp/)), including the **free, zero-top-up tier**—so I’m online, but **everything is just very slow**.
+
+I still wanted to read news anyway. Newslight is the leanest thing I could build for that: small pages, no bloat, no assumptions about speed. It’s basically for my own living room.
 
 ---
 
@@ -19,7 +25,7 @@ Pages are **rendered dynamically**, so each open hits the network. You always ge
 
 | Mode | Details |
 |------|---------|
-| **News** | World, domestic, IT, and top stories (order as in-app). Yahoo! News keyword search. Articles use **canonical Yahoo URLs only**, full body text in-card, **no thumbnails**. |
+| **News** | **World** is the default home tab; also domestic, IT, and top stories (order as in-app). Yahoo! News keyword search. Articles use **canonical Yahoo URLs only**, full body text in-card, **no thumbnails**. |
 | **Weather** | Spots: Aizu-Wakamatsu, Kikugawa, Niitsu, Azumino. Current conditions, today & tomorrow (with dates), ~3-hour steps from the hourly feed, and a **one-week** outlook. |
 
 ---

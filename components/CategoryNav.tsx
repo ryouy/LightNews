@@ -14,11 +14,13 @@ import { CATEGORY_TABS } from "@/lib/yahooCategories";
 import { YAHOO_SEARCH_QUERY_MAX_CHARS } from "@/lib/yahooSearch";
 
 const TAB_PATH: Record<YahooNewsCategory, string> = {
-  top: "/",
+  top: "/top",
   domestic: "/domestic",
   world: "/world",
   it: "/it",
 };
+
+const DEFAULT_CATEGORY_PATH = TAB_PATH.world;
 
 type Props = {
   activeCategory: YahooNewsCategory | null;
@@ -41,7 +43,7 @@ export function CategoryNav({ activeCategory, searchFieldValue }: Props) {
   }, [isPending]);
 
   const selectValue =
-    activeCategory != null ? TAB_PATH[activeCategory] : "";
+    activeCategory != null ? TAB_PATH[activeCategory] : DEFAULT_CATEGORY_PATH;
 
   const navigate = useCallback(
     (href: string) => {
@@ -99,7 +101,6 @@ export function CategoryNav({ activeCategory, searchFieldValue }: Props) {
         onChange={onCategoryChange}
         className="mb-2 w-full rounded-md border border-neutral-300 bg-white px-2 py-2 text-sm text-neutral-900"
       >
-        <option value="" hidden aria-label="検索中表示中" />
         {CATEGORY_TABS.map(({ key, label, path }) => (
           <option key={key} value={path}>
             {label}
