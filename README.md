@@ -1,62 +1,63 @@
 # Newslight
 
-**Yahoo!ニュース**の閲覧と **ウェザーニュース**の地点別天気を、**細い回線でも扱いやすい**ようにまとめた Web アプリです。派手な装飾やアプリ独自の画像素材は置かず、**読みやすいタイポと余白**だけで整えています。
+A minimal web app for **Yahoo! News** and **Weathernews**—built for clarity on slow or costly links. No hero shots, no custom illustration stack: just type, spacing, and the facts you asked for.
 
 ---
 
-## 設計の狙い（軽さ）
+## Why it feels light
 
-- **通信を無駄にしない** — 主要ナビの `Link` は **`prefetch` 無効**。バックグラウンドで別ルートの RSC を取りに行かず、今見ている画面の読み込みに帯域を寄せます。
-- **システムフォントのみ** — Web フォントは使わず、表示の確実さとバイト数を優先します。
-- **装飾より情報** — グラデーション・大きな影・ヒーロー画像は入れていません。天気のアイコンは **予報の意味を伝えるため** にウェザーニュース側の URL を参照するだけです。
-- **サーバーでまとめて取得** — 一覧＆本文・天気 HTML は Cheerio で必要なぶんだけ解析。クライアントに太い JSON を渡さないことを意識しています。
+- **Prefetch off where it hurts** — primary nav links skip background RSC fetches so bandwidth stays on the screen you chose.
+- **System fonts only** — no webfont downloads; predictable layout and smaller payloads.
+- **Signal over chrome** — flat UI, no gradients or heavy shadows. Weather icons are the provider’s own URLs, only where they carry meaning.
+- **Server-side scraping** — lists, article bodies, and weather HTML are parsed with Cheerio on the server; the client doesn’t receive bloated JSON trees.
 
-※ ページは **動的レンダリング**（開くたびサーバーで再取得）なので、**初回表示は回線に依存**します。古いキャッシュで誤解を招かない代わりに、遅い環境では待ち時間が伸びやすいです。
-
----
-
-## できること
-
-| 区分 | 内容 |
-|------|------|
-| **ニュース** | 国際・国内・IT・主要（表示順はアプリ内設定どおり）。Yahoo!ニュース検索。記事は **正規 URL のみ**、カードから本文まで（サムネなし）。 |
-| **天気** | 会津若松・菊川・新津（秋葉区エリア）・安曇野。実況・きょう/あす・おおよそ 3 時間刻み（1 時間予報から間引き）・7 日など。 |
+Pages are **rendered dynamically**, so each open hits the network. You always get fresh context; on thin pipes, first paint may take longer.
 
 ---
 
-## 技術スタック
+## What you get
 
-- [Next.js](https://nextjs.org/)（App Router）· React · [Tailwind CSS](https://tailwindcss.com/)
-- 取得: [axios](https://axios-http.com/) + [cheerio](https://cheerio.js.org/)（**サーバーのみ**）
+| Mode | Details |
+|------|---------|
+| **News** | World, domestic, IT, and top stories (order as in-app). Yahoo! News keyword search. Articles use **canonical Yahoo URLs only**, full body text in-card, **no thumbnails**. |
+| **Weather** | Spots: Aizu-Wakamatsu, Kikugawa, Niitsu, Azumino. Current conditions, today & tomorrow (with dates), ~3-hour steps from the hourly feed, and a **one-week** outlook. |
 
 ---
 
-## ローカルで動かす
+## Stack
+
+- [Next.js](https://nextjs.org/) (App Router) · React · [Tailwind CSS](https://tailwindcss.com/)
+- Fetch & parse: [axios](https://axios-http.com/) + [cheerio](https://cheerio.js.org/) — **server-side only**
+
+---
+
+## Run locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-ブラウザで [http://localhost:3000](http://localhost:3000) を開きます。
+Open [http://localhost:3000](http://localhost:3000).
 
 ---
 
-## Vercel でデプロイ
+## Deploy on Vercel
 
-リポジトリを接続してそのままデプロイで動きます（**環境変数は不要**）。
+Connect the repo and deploy; **no environment variables** required.
 
-- **Root Directory**: リポジトリ直下なら空のまま。モノレポのときだけサブフォルダを指定。
-
----
-
-## 注意
-
-- 表示内容は **Yahoo!ニュース / ウェザーニュースの HTML に依存**します。レイアウト変更でパースが壊れる可能性があります。
-- 各サービスの利用条件・ロボット規約を確認のうえ運用してください。
+- **Root Directory**: leave default unless this app lives in a monorepo subfolder.
 
 ---
 
-## ライセンス
+## Heads-up
 
-リポジトリに同梱のライセンスがある場合はそれに従います。データの著作権は各配信元にあります。
+Markup from **Yahoo! News** and **Weathernews** can change without notice; parsers may need updates.
+
+Review each provider’s terms and crawler policy before you run this in production.
+
+---
+
+## License
+
+Follow whatever license ships with the repository. News and weather content remain with their respective publishers.
