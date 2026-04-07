@@ -3,7 +3,7 @@ import { SiteNav } from "@/components/SiteNav";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Newslight — Yahoo!ニュース・天気",
+  title: "Newslight",
   description:
     "軽量Yahoo!ニュース一覧とウェザーニュースの天気",
 };
