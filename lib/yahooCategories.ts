@@ -13,10 +13,10 @@ export const CATEGORY_TABS: {
   label: string;
   path: string;
 }[] = [
-  { key: "top", label: "主要", path: "/" },
-  { key: "domestic", label: "国内", path: "/domestic" },
   { key: "world", label: "国際", path: "/world" },
+  { key: "domestic", label: "国内", path: "/domestic" },
   { key: "it", label: "IT", path: "/it" },
+  { key: "top", label: "主要", path: "/" },
 ];
 
 export function isYahooNewsCategory(s: string): s is YahooNewsCategory {

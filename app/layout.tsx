@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import { SiteNav } from "@/components/SiteNav";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Newslight — Yahoo!ニュース",
+  title: "Newslight — Yahoo!ニュース・天気",
   description:
-    "軽量Yahoo!ニュース一覧",
+    "軽量Yahoo!ニュース一覧とウェザーニュースの天気",
 };
 
 export default function RootLayout({
@@ -15,6 +16,9 @@ export default function RootLayout({
   return (
     <html lang="ja" className="h-full">
       <body className="min-h-full bg-white text-neutral-900 antialiased">
+        <div className="mx-auto max-w-lg">
+          <SiteNav />
+        </div>
         {children}
       </body>
     </html>
