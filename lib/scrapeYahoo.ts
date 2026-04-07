@@ -7,7 +7,8 @@ import { YAHOO_CATEGORY_URL } from "./yahooCategories";
 
 type CheerioLoaded = ReturnType<typeof cheerio.load>;
 
-const MAX_ITEMS = 35;
+/** 一覧・検索ともにこの件数まで（本文取得の回数も抑える） */
+const MAX_ITEMS = 10;
 const BODY_FETCH_CONCURRENCY = 4;
 
 /** 例: https://news.yahoo.co.jp/articles/3bc11c1aff5aff87b8d04f5be15f9968157a86cc */

@@ -56,7 +56,7 @@ export async function WeatherView({ spotId }: Props) {
   return (
     <div className="mx-auto flex min-h-full max-w-lg flex-col px-3 pb-6 pt-1">
       {header}
-      <div className="mt-2 space-y-0 text-neutral-800">
+      <div className="mt-2 min-w-0 space-y-0 text-neutral-800">
         <section className="pb-3">
           {data.headline ? (
             <p className="text-[11px] text-neutral-500">{data.headline}</p>
