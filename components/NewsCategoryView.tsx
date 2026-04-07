@@ -1,29 +1,61 @@
-import { CategoryTabs } from "@/components/CategoryTabs";
+import { CategoryNav } from "@/components/CategoryNav";
 import { NewsCard } from "@/components/NewsCard";
+import {
+  scrapeYahooCategoryNews,
+  scrapeYahooSearchNews,
+} from "@/lib/scrapeYahoo";
 import type { YahooNewsCategory } from "@/lib/yahooCategories";
-import { scrapeYahooCategoryNews } from "@/lib/scrapeYahoo";
 
-type Props = { category: YahooNewsCategory };
+type CategoryProps = { category: YahooNewsCategory };
+type SearchProps = { searchQuery: string };
 
-export async function NewsCategoryView({ category }: Props) {
+export type NewsCategoryViewProps = CategoryProps | SearchProps;
+
+export async function NewsCategoryView(props: NewsCategoryViewProps) {
   let items: Awaited<ReturnType<typeof scrapeYahooCategoryNews>> = [];
-  try {
-    items = await scrapeYahooCategoryNews(category);
-  } catch {
-    /* 取得失敗時もページ表示 */
+  let heading = "ニュース";
+  let activeCategory: YahooNewsCategory | null = null;
+  let searchFieldValue = "";
+
+  if ("searchQuery" in props) {
+    searchFieldValue = props.searchQuery;
+    const q = props.searchQuery.trim();
+    heading = q ? `「${q}」の検索` : "検索";
+    activeCategory = null;
+    if (q) {
+      try {
+        items = await scrapeYahooSearchNews(q);
+      } catch {
+        /* 取得失敗時もページ表示 */
+      }
+    }
+  } else {
+    activeCategory = props.category;
+    try {
+      items = await scrapeYahooCategoryNews(props.category);
+    } catch {
+      /* 取得失敗時もページ表示 */
+    }
   }
 
   return (
     <div className="mx-auto flex min-h-full max-w-lg flex-col px-3 pb-8 pt-2">
       <header className="sticky top-0 z-10 bg-white">
         <h1 className="pt-1 text-base font-semibold text-neutral-900">
-          ニュース
+          {heading}
         </h1>
-        <CategoryTabs active={category} />
+        <CategoryNav
+          activeCategory={activeCategory}
+          searchFieldValue={searchFieldValue}
+        />
       </header>
       {items.length === 0 ? (
         <p className="py-8 text-center text-sm text-neutral-600">
-          ニュースを取得できませんでした。しばらくしてから再読み込みしてください。
+          {"searchQuery" in props && !props.searchQuery.trim()
+            ? "キーワードを入力して、Yahoo!ニュースを検索できます。"
+            : "searchQuery" in props && props.searchQuery.trim()
+              ? "該当する記事が見つかりませんでした。別のキーワードで試すか、しばらくしてから再度お試しください。"
+              : "ニュースを取得できませんでした。しばらくしてから再読み込みしてください。"}
         </p>
       ) : (
         <div className="divide-y divide-neutral-100">
