@@ -122,7 +122,7 @@ export function CategoryNav({ activeCategory, searchFieldValue }: Props) {
           name="q"
           type="search"
           enterKeyHint="search"
-          placeholder="Yahoo!ニュースを検索"
+          placeholder="検索"
           defaultValue={searchFieldValue}
           maxLength={YAHOO_SEARCH_QUERY_MAX_CHARS}
           autoComplete="off"

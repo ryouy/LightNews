@@ -7,31 +7,41 @@ export function SiteNav() {
   const pathname = usePathname();
   const isWeather = pathname.startsWith("/weather");
 
+  const active =
+    "flex-1 rounded-md bg-blue-600 py-2.5 text-center text-sm font-medium text-white no-underline";
+  const idle =
+    "flex-1 rounded-md py-2.5 text-center text-sm text-neutral-600 no-underline hover:bg-neutral-200/60 hover:text-blue-700";
+
   return (
     <nav
-      className="flex gap-4 border-b border-neutral-200 bg-white px-3 py-2 text-sm"
-      aria-label="サイト内"
+      className="border-b border-neutral-200 bg-white px-3 py-2"
+      aria-label="表示の切り替え"
     >
-      <Link
-        href="/"
-        className={
-          !isWeather
-            ? "font-semibold text-neutral-900 no-underline"
-            : "text-neutral-600 no-underline hover:text-neutral-900"
-        }
+      <div
+        className="flex gap-1 rounded-lg border border-neutral-200 bg-neutral-100 p-0.5"
+        role="tablist"
       >
-        ニュース
-      </Link>
-      <Link
-        href="/weather"
-        className={
-          isWeather
-            ? "font-semibold text-neutral-900 no-underline"
-            : "text-neutral-600 no-underline hover:text-neutral-900"
-        }
-      >
-        天気
-      </Link>
+        <Link
+          href="/"
+          role="tab"
+          prefetch={false}
+          aria-selected={!isWeather}
+          aria-current={!isWeather ? "page" : undefined}
+          className={!isWeather ? active : idle}
+        >
+          ニュース
+        </Link>
+        <Link
+          href="/weather"
+          role="tab"
+          prefetch={false}
+          aria-selected={isWeather}
+          aria-current={isWeather ? "page" : undefined}
+          className={isWeather ? active : idle}
+        >
+          天気
+        </Link>
+      </div>
     </nav>
   );
 }

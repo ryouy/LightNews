@@ -1,6 +1,10 @@
 import * as cheerio from "cheerio";
 import { fetchHtml } from "./fetchHtml";
-import type { WeatherSnapshot, WeatherWeekDay } from "./typesWeather";
+import type {
+  WeatherHourlyPoint,
+  WeatherSnapshot,
+  WeatherWeekDay,
+} from "./typesWeather";
 
 type CheerioLoaded = ReturnType<typeof cheerio.load>;
 type CheerSel = ReturnType<CheerioLoaded>;
@@ -95,6 +99,100 @@ function parseWeekForecast($: CheerioLoaded): WeatherWeekDay[] {
   });
 }
 
+function todayDateKeyFromNowDay($: CheerioLoaded): string {
+  const span = $("#now__day h3 span").first().text().trim();
+  const m = span.match(/(\d+)月(\d+)日\s*\(([^)]+)\)/);
+  if (m) return `${m[2]}日(${m[3]})`;
+  return "";
+}
+
+function fallbackTodayDateKeyFromWeek0($: CheerioLoaded): string {
+  const day = $("#wx__week0 .date .day").first().text().trim();
+  const dow = $("#wx__week0 .date .dow").first().text().trim();
+  if (!day || !dow) return "";
+  return dow.startsWith("(") ? `${day}日${dow}` : `${day}日(${dow})`;
+}
+
+function normalizeGroupDateLabel(raw: string): string {
+  return raw.replace(/\s+/g, "").trim();
+}
+
+function parseHourRow($: CheerioLoaded, row: CheerSel): WeatherHourlyPoint | null {
+  const hour = row.find("li.time p").first().text().trim();
+  if (hour === "") return null;
+  const hNum = parseInt(hour, 10);
+  if (Number.isNaN(hNum)) return null;
+
+  const iconUrl = normalizeIconUrl(
+    row.find("li.weather img.wx__icon").first().attr("src") ?? "",
+  );
+  const rain = row.find("li.rain p").first().text().replace(/\s+/g, "").trim();
+  const tempP = row.find("li.temp p").first();
+  const tempTxt = tempP.clone().children().remove().end().text().trim();
+  const tempC = parseFloat(tempTxt);
+  if (Number.isNaN(tempC)) return null;
+  const wind = row.find("li.wind p").first().text().replace(/\s+/g, "").trim();
+
+  return {
+    hour,
+    iconUrl,
+    rain,
+    wind,
+    tempC,
+    tempLabel: `${tempTxt}℃`,
+  };
+}
+
+function pickThreeHourlyPoints(points: WeatherHourlyPoint[]): WeatherHourlyPoint[] {
+  if (points.length <= 1) return points;
+  const byMod = points.filter((p) => {
+    const h = parseInt(p.hour, 10);
+    return !Number.isNaN(h) && h % 3 === 0;
+  });
+  if (byMod.length >= 4) return byMod;
+  const stepped = points.filter((_, i) => i % 3 === 0);
+  if (stepped.length >= 2) return stepped;
+  return points;
+}
+
+function parseTodayHourly3h(
+  $: CheerioLoaded,
+): { todayBarTitle: string; points: WeatherHourlyPoint[] } {
+  const todayBarTitle = $("#now__day h3 span")
+    .first()
+    .text()
+    .replace(/\s+/g, " ")
+    .trim();
+
+  let key = todayDateKeyFromNowDay($);
+  if (!key) key = fallbackTodayDateKeyFromWeek0($);
+  const keyNorm = normalizeGroupDateLabel(key);
+  if (!keyNorm) return { todayBarTitle, points: [] };
+
+  let matched: cheerio.Element | undefined;
+  $('.wx__table[data-num="2"] .group').each((_, el) => {
+    const label = normalizeGroupDateLabel(
+      $(el).find(".date > p").first().text(),
+    );
+    if (label === keyNorm) {
+      matched = el;
+      return false;
+    }
+  });
+
+  if (!matched) return { todayBarTitle, points: [] };
+
+  const group = $(matched);
+  const raw: WeatherHourlyPoint[] = [];
+  group.find(".wx1h_content > ul.list").each((_, el) => {
+    const row = $(el);
+    const pt = parseHourRow($, row);
+    if (pt) raw.push(pt);
+  });
+
+  return { todayBarTitle, points: pickThreeHourlyPoints(raw) };
+}
+
 /** ウェザーニュース onebox 天気ページを取得 */
 export async function scrapeWeathernews(url: string): Promise<WeatherSnapshot | null> {
   let html: string;
@@ -108,11 +206,20 @@ export async function scrapeWeathernews(url: string): Promise<WeatherSnapshot | 
   const headline = $("h1.title").first().text().replace(/\s+/g, " ").trim();
   const observedAt = $(".sun .time").first().text().replace(/\s+/g, " ").trim();
 
-  const iconFig = $("figure.icon").first();
-  const condition = iconFig.find("figcaption").first().text().trim();
-  const observedIconUrl = normalizeIconUrl(
-    iconFig.find("img").first().attr("src") ?? "",
-  );
+  /** ページ先頭の figure.icon だけだと figcaption が空のブロックを掴むことがある */
+  let condition = "";
+  let observedIconUrl = "";
+  $("figure.icon").each((_, el) => {
+    const fig = $(el);
+    const cap = fig.find("figcaption").first().text().trim();
+    if (cap) {
+      condition = cap.replace(/\s+/g, " ");
+      observedIconUrl = normalizeIconUrl(
+        fig.find("img").first().attr("src") ?? "",
+      );
+      return false;
+    }
+  });
 
   let temperatureC = "";
   let humidityPct = "";
@@ -132,6 +239,11 @@ export async function scrapeWeathernews(url: string): Promise<WeatherSnapshot | 
   const todayCard = $("#now__day");
   const tomorrowCard = todayCard.length ? todayCard.next(".card") : null;
 
+  const tomorrowBarTitle =
+    tomorrowCard && tomorrowCard.length
+      ? tomorrowCard.find("h3 span").first().text().replace(/\s+/g, " ").trim()
+      : "";
+
   const today = todayCard.length
     ? parseDayCard($, todayCard)
     : { summary: "", high: "", low: "", pop: "", iconUrl: "" };
@@ -141,6 +253,7 @@ export async function scrapeWeathernews(url: string): Promise<WeatherSnapshot | 
       : { summary: "", high: "", low: "", pop: "", iconUrl: "" };
 
   const week = parseWeekForecast($);
+  const { todayBarTitle, points: todayHourly3h } = parseTodayHourly3h($);
 
   if (!headline && !condition && !today.summary) {
     return null;
@@ -166,6 +279,9 @@ export async function scrapeWeathernews(url: string): Promise<WeatherSnapshot | 
     tomorrowLow: tomorrow.low,
     tomorrowPop: tomorrow.pop,
     week,
+    todayBarTitle,
+    tomorrowBarTitle,
+    todayHourly3h,
     sourceUrl: url,
   };
 }

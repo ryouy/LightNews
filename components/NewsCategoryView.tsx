@@ -4,7 +4,10 @@ import {
   scrapeYahooCategoryNews,
   scrapeYahooSearchNews,
 } from "@/lib/scrapeYahoo";
-import type { YahooNewsCategory } from "@/lib/yahooCategories";
+import {
+  CATEGORY_TABS,
+  type YahooNewsCategory,
+} from "@/lib/yahooCategories";
 
 type CategoryProps = { category: YahooNewsCategory };
 type SearchProps = { searchQuery: string };
@@ -13,14 +16,12 @@ export type NewsCategoryViewProps = CategoryProps | SearchProps;
 
 export async function NewsCategoryView(props: NewsCategoryViewProps) {
   let items: Awaited<ReturnType<typeof scrapeYahooCategoryNews>> = [];
-  let heading = "ニュース";
   let activeCategory: YahooNewsCategory | null = null;
   let searchFieldValue = "";
 
   if ("searchQuery" in props) {
     searchFieldValue = props.searchQuery;
     const q = props.searchQuery.trim();
-    heading = q ? `「${q}」の検索` : "検索";
     activeCategory = null;
     if (q) {
       try {
@@ -41,9 +42,18 @@ export async function NewsCategoryView(props: NewsCategoryViewProps) {
   return (
     <div className="mx-auto flex min-h-full max-w-lg flex-col px-3 pb-8 pt-2">
       <header className="sticky top-0 z-10 bg-white">
-        <h1 className="pt-1 text-base font-semibold text-neutral-900">
-          {heading}
-        </h1>
+        {"searchQuery" in props ? (
+          <h1 className="sr-only">
+            {props.searchQuery.trim()
+              ? `「${props.searchQuery.trim()}」の検索`
+              : "検索"}
+          </h1>
+        ) : (
+          <h1 className="sr-only">
+            {CATEGORY_TABS.find((t) => t.key === props.category)?.label ??
+              "ニュース"}
+          </h1>
+        )}
         <CategoryNav
           activeCategory={activeCategory}
           searchFieldValue={searchFieldValue}

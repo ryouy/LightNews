@@ -25,7 +25,6 @@ export const WEATHER_SPOTS: WeatherSpot[] = [
   {
     id: "niitsu",
     label: "新津",
-    sublabel: "新潟市秋葉区（新津エリアの予報）",
     sourceUrl: "https://weathernews.jp/onebox/tenki/niigata/15105/",
   },
   {
