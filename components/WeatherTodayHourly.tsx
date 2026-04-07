@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { WeatherIcon } from "@/components/WeatherIcon";
 import type { WeatherHourlyPoint } from "@/lib/typesWeather";
 
@@ -29,20 +29,42 @@ function indexClosestHour(points: WeatherHourlyPoint[]): number {
   return best;
 }
 
-/** 今日の約3時間ごと予報。現在時刻に近いカードを枠で示す */
+function scrollActiveToCenter(
+  sc: HTMLDivElement,
+  activeEl: HTMLElement,
+): void {
+  const left =
+    activeEl.offsetLeft + activeEl.offsetWidth / 2 - sc.clientWidth / 2;
+  sc.scrollLeft = Math.max(0, Math.min(left, sc.scrollWidth - sc.clientWidth));
+}
+
+/** 今日の約3時間ごと予報。現在に近いカードを枠で示し、横スクロールの中央に来るようにする */
 export function WeatherTodayHourly({ points }: Props) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [nearIndex, setNearIndex] = useState<number | null>(null);
 
   useLayoutEffect(() => {
-    setNearIndex(indexClosestHour(points));
+    setNearIndex(points.length ? indexClosestHour(points) : null);
   }, [points]);
+
+  useLayoutEffect(() => {
+    if (nearIndex === null) return;
+    const sc = scrollRef.current;
+    if (!sc) return;
+    const activeEl = sc.children.item(nearIndex) as HTMLElement | null;
+    if (!activeEl) return;
+    scrollActiveToCenter(sc, activeEl);
+  }, [points, nearIndex]);
 
   if (points.length === 0) return null;
 
   return (
     <section className="border-t border-neutral-200 pt-3">
       <h2 className="mb-2 text-[11px] font-medium text-neutral-500">今日</h2>
-      <div className="-mx-0.5 flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:thin]">
+      <div
+        ref={scrollRef}
+        className="-mx-0.5 flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:thin]"
+      >
         {points.map((p, i) => {
           const isNear = nearIndex !== null && i === nearIndex;
           return (
