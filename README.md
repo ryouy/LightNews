@@ -4,7 +4,7 @@
 
 ## Why this exists
 
-At home I don’t have wired internet. I use a cheap phone SIM ([POVO](https://povo.jp/)), including the **free, zero-top-up tier**—so I’m online, but **everything is just very slow**.
+At home I don’t have wired internet. I use a cheap phone SIM ([Povo](https://povo.jp/)), including the **free, zero-top-up tier**—so I’m online, but **everything is just very slow**.
 
 I still wanted to read news anyway. Newslight is the leanest thing I could build for that: small pages, no bloat, no assumptions about speed. It’s basically for my own living room.
 
