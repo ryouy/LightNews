@@ -1,30 +1,50 @@
 import { WeatherIcon } from "@/components/WeatherIcon";
+import { WeatherLocationSearch } from "@/components/WeatherLocationSearch";
 import { WeatherSpotNav } from "@/components/WeatherSpotNav";
 import { WeatherTodayHourly } from "@/components/WeatherTodayHourly";
 import { scrapeWeathernews } from "@/lib/scrapeWeathernews";
 import type { WeatherSpotId } from "@/lib/weatherSpots";
 import { WEATHER_SPOTS } from "@/lib/weatherSpots";
 
-type Props = { spotId: WeatherSpotId };
+export type WeatherViewProps =
+  | { spotId: WeatherSpotId; weatherSearchQuery?: string }
+  | {
+      custom: { sourceUrl: string; label: string };
+      weatherSearchQuery: string;
+    };
 
-export async function WeatherView({ spotId }: Props) {
-  const spot = WEATHER_SPOTS.find((s) => s.id === spotId)!;
+export async function WeatherView(props: WeatherViewProps) {
+  const spot =
+    "spotId" in props
+      ? WEATHER_SPOTS.find((s) => s.id === props.spotId)!
+      : null;
+  const sourceUrl =
+    "spotId" in props ? spot!.sourceUrl : props.custom.sourceUrl;
+  const label =
+    "spotId" in props ? spot!.label : props.custom.label;
+  const sublabel = spot?.sublabel;
+  const activeSpot: WeatherSpotId | null =
+    "spotId" in props ? props.spotId : null;
+  const weatherSearchQuery =
+    "spotId" in props
+      ? (props.weatherSearchQuery ?? "")
+      : props.weatherSearchQuery;
+
   let data: Awaited<ReturnType<typeof scrapeWeathernews>> = null;
   try {
-    data = await scrapeWeathernews(spot.sourceUrl);
+    data = await scrapeWeathernews(sourceUrl);
   } catch {
     /* 表示は続行 */
   }
 
   const header = (
     <header className="bg-white pt-1">
-      <h1 className="sr-only">
-        天気・{spot.label}
-      </h1>
-      {spot.sublabel ? (
-        <p className="text-[11px] text-neutral-400">{spot.sublabel}</p>
+      <h1 className="sr-only">天気・{label}</h1>
+      {sublabel ? (
+        <p className="text-[11px] text-neutral-400">{sublabel}</p>
       ) : null}
-      <WeatherSpotNav active={spotId} />
+      <WeatherLocationSearch initialQuery={weatherSearchQuery} />
+      <WeatherSpotNav active={activeSpot} />
     </header>
   );
 
@@ -86,15 +106,19 @@ export async function WeatherView({ spotId }: Props) {
             </div>
           </div>
           {metricsLine ? (
-            <p className="mt-2 text-[10px] leading-relaxed text-neutral-500">{metricsLine}</p>
+            <p className="mt-2 text-[10px] leading-relaxed text-neutral-500">
+              {metricsLine}
+            </p>
           ) : null}
         </section>
 
         <WeatherTodayHourly points={data.todayHourly3h} />
 
-        {(data.todaySummary || data.todayHigh || data.tomorrowSummary || data.tomorrowHigh) && (
+        {(data.todaySummary ||
+          data.todayHigh ||
+          data.tomorrowSummary ||
+          data.tomorrowHigh) && (
           <section className="border-t border-neutral-200 pt-3">
-            
             <div className="flex flex-row gap-2 sm:gap-3">
               {(data.todaySummary || data.todayHigh) && (
                 <div className="flex min-w-0 flex-1 gap-2">
@@ -105,7 +129,9 @@ export async function WeatherView({ spotId }: Props) {
                     className="shrink-0"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-medium text-neutral-500">今日</p>
+                    <p className="text-[10px] font-medium text-neutral-500">
+                      今日
+                    </p>
                     {todayDateLabel ? (
                       <p className="mt-0.5 text-[10px] font-medium tabular-nums text-neutral-700">
                         {todayDateLabel}
@@ -117,12 +143,17 @@ export async function WeatherView({ spotId }: Props) {
                       </p>
                     ) : null}
                     <p className="mt-1 text-[10px] tabular-nums text-neutral-600 sm:text-[11px]">
-                      {[data.todayHigh && `高 ${data.todayHigh}`, data.todayLow && `低 ${data.todayLow}`]
+                      {[
+                        data.todayHigh && `高 ${data.todayHigh}`,
+                        data.todayLow && `低 ${data.todayLow}`,
+                      ]
                         .filter(Boolean)
                         .join(" · ")}
                     </p>
                     {data.todayPop ? (
-                      <p className="mt-0.5 text-[9px] text-neutral-500 sm:text-[10px]">降水 {data.todayPop}</p>
+                      <p className="mt-0.5 text-[9px] text-neutral-500 sm:text-[10px]">
+                        降水 {data.todayPop}
+                      </p>
                     ) : null}
                   </div>
                 </div>
@@ -136,7 +167,9 @@ export async function WeatherView({ spotId }: Props) {
                     className="shrink-0"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-medium text-neutral-500">明日</p>
+                    <p className="text-[10px] font-medium text-neutral-500">
+                      明日
+                    </p>
                     {tomorrowDateLabel ? (
                       <p className="mt-0.5 text-[10px] font-medium tabular-nums text-neutral-700">
                         {tomorrowDateLabel}
@@ -156,7 +189,9 @@ export async function WeatherView({ spotId }: Props) {
                         .join(" · ")}
                     </p>
                     {data.tomorrowPop ? (
-                      <p className="mt-0.5 text-[9px] text-neutral-500 sm:text-[10px]">降水 {data.tomorrowPop}</p>
+                      <p className="mt-0.5 text-[9px] text-neutral-500 sm:text-[10px]">
+                        降水 {data.tomorrowPop}
+                      </p>
                     ) : null}
                   </div>
                 </div>
@@ -167,7 +202,9 @@ export async function WeatherView({ spotId }: Props) {
 
         {data.week.length > 0 ? (
           <section className="border-t border-neutral-200 pt-3">
-            <h2 className="mb-2 text-[11px] font-medium text-neutral-500">1週間予報</h2>
+            <h2 className="mb-2 text-[11px] font-medium text-neutral-500">
+              1週間予報
+            </h2>
             <div className="-mx-0.5 flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:thin]">
               {data.week.map((d, i) => (
                 <div

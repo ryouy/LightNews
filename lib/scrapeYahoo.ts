@@ -4,11 +4,13 @@ import { fetchHtml } from "./fetchHtml";
 import { YAHOO_SEARCH_QUERY_MAX_CHARS } from "./yahooSearch";
 import type { YahooNewsCategory } from "./yahooCategories";
 import { YAHOO_CATEGORY_URL } from "./yahooCategories";
+import {
+  DEFAULT_NEWS_LIMIT,
+  type NewsLimitOption,
+} from "./newsLimit";
+import type { YahooCategoryFeed } from "./yahooFeed";
 
 type CheerioLoaded = ReturnType<typeof cheerio.load>;
-
-/** 一覧・検索ともにこの件数まで（本文取得の回数も抑える） */
-const MAX_ITEMS = 10;
 const BODY_FETCH_CONCURRENCY = 4;
 
 /** 例: https://news.yahoo.co.jp/articles/3bc11c1aff5aff87b8d04f5be15f9968157a86cc */
@@ -30,6 +32,34 @@ function absolutizeYahoo(href: string): string {
   if (href.startsWith("http")) return href;
   if (href.startsWith("//")) return `https:${href}`;
   return `https://news.yahoo.co.jp${href.startsWith("/") ? "" : "/"}${href}`;
+}
+
+/** 例: https://news.yahoo.co.jp/pickup/6575717 */
+function canonicalPickupUrl(href: string): string | null {
+  if (!href) return null;
+  const abs = absolutizeYahoo(href.split("#")[0]!.split("?")[0]!);
+  try {
+    const u = new URL(abs);
+    if (u.hostname !== "news.yahoo.co.jp") return null;
+    const m = u.pathname.match(/^\/pickup\/(\d+)\/?$/i);
+    if (!m) return null;
+    return `https://news.yahoo.co.jp/pickup/${m[1]}`;
+  } catch {
+    return null;
+  }
+}
+
+/** pickup ページ内の先頭記事リンクから正規化 URL を得る */
+async function resolvePickupToArticleUrl(pickupUrl: string): Promise<string | null> {
+  try {
+    const html = await fetchHtml(pickupUrl);
+    const $ = cheerio.load(html);
+    const href = $('a[href*="/articles/"]').first().attr("href");
+    if (!href) return null;
+    return canonicalArticleUrl(href);
+  } catch {
+    return null;
+  }
 }
 
 /** 検索結果の `4/7(火) 11:25` 形式 */
@@ -234,8 +264,8 @@ function pushArticleFromAnchor(
   });
 }
 
-/** トップ: アクセスランキング優先 → 他カラムの記事リンク（/pickup は対象外） */
-function collectFromMainPage(html: string, seen: Set<string>): NewsItem[] {
+/** サイドバー「アクセスランキング」（#accr）のみ */
+function collectRankingFromMainPage(html: string, seen: Set<string>): NewsItem[] {
   const $ = cheerio.load(html);
   const out: NewsItem[] = [];
   const fallbackTime = new Date().toISOString();
@@ -244,23 +274,72 @@ function collectFromMainPage(html: string, seen: Set<string>): NewsItem[] {
     pushArticleFromAnchor($, el, seen, out, true, fallbackTime),
   );
 
-  $("a[href*='/articles/']").each((_, el) => {
-    if ($(el).closest("#accr").length) return;
-    pushArticleFromAnchor($, el, seen, out, false, fallbackTime);
+  return out;
+}
+
+/** トピックス（#uamods-topics）は /pickup/ リンク → 各 pickup から記事 URL を解決 */
+async function scrapeYahooCategoryTopicsNews(
+  category: YahooNewsCategory,
+  maxItems: NewsLimitOption,
+): Promise<NewsItem[]> {
+  const pageUrl = YAHOO_CATEGORY_URL[category];
+  const html = await fetchHtml(pageUrl);
+  const $ = cheerio.load(html);
+  const fallbackTime = new Date().toISOString();
+  const seenPickup = new Set<string>();
+  const pending: { pickupUrl: string; title: string }[] = [];
+
+  $("#uamods-topics a[href*='/pickup/']").each((_, el) => {
+    const href = $(el).attr("href") ?? "";
+    const canonical = canonicalPickupUrl(href);
+    if (!canonical || seenPickup.has(canonical)) return;
+    seenPickup.add(canonical);
+    const title = $(el).text().trim().replace(/\s+/g, " ");
+    if (title.length < 3) return;
+    pending.push({ pickupUrl: canonical, title });
   });
 
-  return out;
+  const maxAttempts = Math.min(Math.max(pending.length, maxItems + 5), 40);
+  const toResolve = pending.slice(0, maxAttempts);
+
+  const items: NewsItem[] = [];
+  const seenArticle = new Set<string>();
+
+  for (const job of toResolve) {
+    if (items.length >= maxItems) break;
+    const articleUrl = await resolvePickupToArticleUrl(job.pickupUrl);
+    if (!articleUrl || seenArticle.has(articleUrl)) continue;
+    seenArticle.add(articleUrl);
+    items.push({
+      title: job.title,
+      url: articleUrl,
+      body: "",
+      source: "yahoo",
+      outlet: "",
+      publishedAt: fallbackTime,
+    });
+  }
+
+  const limited = items.slice(0, maxItems);
+  await attachBodies(limited);
+  return limited;
 }
 
 /** 指定カテゴリの Yahoo!ニュース一覧ページのみから収集 */
 export async function scrapeYahooCategoryNews(
   category: YahooNewsCategory,
+  maxItems: NewsLimitOption = DEFAULT_NEWS_LIMIT,
+  feed: YahooCategoryFeed = "topics",
 ): Promise<NewsItem[]> {
+  if (feed === "topics") {
+    return scrapeYahooCategoryTopicsNews(category, maxItems);
+  }
+
   const seen = new Set<string>();
   const pageUrl = YAHOO_CATEGORY_URL[category];
   const html = await fetchHtml(pageUrl);
-  const merged = collectFromMainPage(html, seen);
-  const limited = merged.slice(0, MAX_ITEMS);
+  const merged = collectRankingFromMainPage(html, seen);
+  const limited = merged.slice(0, maxItems);
   await attachBodies(limited);
   return limited;
 }
@@ -275,6 +354,7 @@ function normalizeSearchQuery(q: string): string {
 /** Yahoo!ニュース検索 (`/search?p=`) の結果から記事を収集 */
 export async function scrapeYahooSearchNews(
   query: string,
+  maxItems: NewsLimitOption = DEFAULT_NEWS_LIMIT,
 ): Promise<NewsItem[]> {
   const q = normalizeSearchQuery(query);
   if (!q) return [];
@@ -297,7 +377,7 @@ export async function scrapeYahooSearchNews(
     });
   }
 
-  const limited = out.slice(0, MAX_ITEMS);
+  const limited = out.slice(0, maxItems);
   await attachBodies(limited);
   return limited;
 }

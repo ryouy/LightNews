@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { WeatherSpotId } from "@/lib/weatherSpots";
 import { WEATHER_SPOTS } from "@/lib/weatherSpots";
 
-type Props = { active: WeatherSpotId };
+type Props = { active: WeatherSpotId | null };
 
 export function WeatherSpotNav({ active }: Props) {
   return (
@@ -16,7 +16,7 @@ export function WeatherSpotNav({ active }: Props) {
           href={`/weather/${id}`}
           prefetch={false}
           className={
-            active === id
+            active != null && active === id
               ? "shrink-0 border-b-2 border-blue-600 px-2.5 py-2 text-xs font-medium text-blue-600 no-underline"
               : "shrink-0 border-b-2 border-transparent px-2.5 py-2 text-xs text-neutral-600 no-underline hover:text-blue-600"
           }

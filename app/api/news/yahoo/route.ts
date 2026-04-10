@@ -3,7 +3,12 @@ import {
   scrapeYahooCategoryNews,
   scrapeYahooSearchNews,
 } from "@/lib/scrapeYahoo";
-import { isYahooNewsCategory, type YahooNewsCategory } from "@/lib/yahooCategories";
+import { parseNewsLimitParam } from "@/lib/newsLimit";
+import { parseYahooFeedParam } from "@/lib/yahooFeed";
+import {
+  isYahooNewsCategory,
+  type YahooNewsCategory,
+} from "@/lib/yahooCategories";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -16,12 +21,14 @@ export async function GET(request: Request) {
   const category: YahooNewsCategory = isYahooNewsCategory(rawCat)
     ? rawCat
     : "world";
+  const limit = parseNewsLimitParam(searchParams.get("n"));
+  const feed = parseYahooFeedParam(searchParams.get("feed"));
 
   try {
     const data =
       q.length > 0
-        ? await scrapeYahooSearchNews(q)
-        : await scrapeYahooCategoryNews(category);
+        ? await scrapeYahooSearchNews(q, limit)
+        : await scrapeYahooCategoryNews(category, limit, feed);
     return NextResponse.json(data, {
       headers: {
         "Cache-Control": "private, no-store",

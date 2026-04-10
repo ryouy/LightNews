@@ -1,4 +1,4 @@
-export type WeatherSpotId = "aizu" | "kikugawa" | "niitsu" | "azumino";
+export type WeatherSpotId = "aizu" | "kikugawa" | "azumino";
 
 export type WeatherSpot = {
   id: WeatherSpotId;
@@ -10,7 +10,7 @@ export type WeatherSpot = {
   sourceUrl: string;
 };
 
-/** 表示順: 会津若松、菊川、新津、安曇野 */
+/** 表示順: 会津若松、菊川、安曇野 */
 export const WEATHER_SPOTS: WeatherSpot[] = [
   {
     id: "aizu",
@@ -21,11 +21,6 @@ export const WEATHER_SPOTS: WeatherSpot[] = [
     id: "kikugawa",
     label: "菊川",
     sourceUrl: "https://weathernews.jp/onebox/tenki/shizuoka/22224/",
-  },
-  {
-    id: "niitsu",
-    label: "新津",
-    sourceUrl: "https://weathernews.jp/onebox/tenki/niigata/15105/",
   },
   {
     id: "azumino",

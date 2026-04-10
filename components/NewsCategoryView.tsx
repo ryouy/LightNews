@@ -8,13 +8,20 @@ import {
   CATEGORY_TABS,
   type YahooNewsCategory,
 } from "@/lib/yahooCategories";
+import type { NewsLimitOption } from "@/lib/newsLimit";
+import type { YahooCategoryFeed } from "@/lib/yahooFeed";
 
-type CategoryProps = { category: YahooNewsCategory };
-type SearchProps = { searchQuery: string };
+type CategoryProps = {
+  category: YahooNewsCategory;
+  limit: NewsLimitOption;
+  categoryFeed: YahooCategoryFeed;
+};
+type SearchProps = { searchQuery: string; limit: NewsLimitOption };
 
 export type NewsCategoryViewProps = CategoryProps | SearchProps;
 
 export async function NewsCategoryView(props: NewsCategoryViewProps) {
+  const limit = props.limit;
   let items: Awaited<ReturnType<typeof scrapeYahooCategoryNews>> = [];
   let activeCategory: YahooNewsCategory | null = null;
   let searchFieldValue = "";
@@ -25,7 +32,7 @@ export async function NewsCategoryView(props: NewsCategoryViewProps) {
     activeCategory = null;
     if (q) {
       try {
-        items = await scrapeYahooSearchNews(q);
+        items = await scrapeYahooSearchNews(q, limit);
       } catch {
         /* 取得失敗時もページ表示 */
       }
@@ -33,7 +40,11 @@ export async function NewsCategoryView(props: NewsCategoryViewProps) {
   } else {
     activeCategory = props.category;
     try {
-      items = await scrapeYahooCategoryNews(props.category);
+      items = await scrapeYahooCategoryNews(
+        props.category,
+        limit,
+        props.categoryFeed,
+      );
     } catch {
       /* 取得失敗時もページ表示 */
     }
@@ -57,6 +68,14 @@ export async function NewsCategoryView(props: NewsCategoryViewProps) {
         <CategoryNav
           activeCategory={activeCategory}
           searchFieldValue={searchFieldValue}
+          limit={limit}
+          searchQueryForNav={
+            "searchQuery" in props ? props.searchQuery : undefined
+          }
+          categoryFeed={
+            "categoryFeed" in props ? props.categoryFeed : "topics"
+          }
+          showFeedSwitch={!("searchQuery" in props)}
         />
       </header>
       {items.length === 0 ? (
@@ -65,7 +84,9 @@ export async function NewsCategoryView(props: NewsCategoryViewProps) {
             ? "キーワードを入力して、Yahoo!ニュースを検索できます。"
             : "searchQuery" in props && props.searchQuery.trim()
               ? "該当する記事が見つかりませんでした。別のキーワードで試すか、しばらくしてから再度お試しください。"
-              : "ニュースを取得できませんでした。しばらくしてから再読み込みしてください。"}
+              : "categoryFeed" in props && props.categoryFeed === "topics"
+                ? "トピックスを取得できませんでした。しばらくしてから再読み込みしてください。"
+                : "ニュースを取得できませんでした。しばらくしてから再読み込みしてください。"}
         </p>
       ) : (
         <div className="divide-y divide-neutral-100">
