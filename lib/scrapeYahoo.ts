@@ -100,6 +100,67 @@ function parseYahooDateText(
   return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
 }
 
+function orgNameFromLdAuthor(author: unknown): string {
+  if (!author || typeof author !== "object") return "";
+  const a = author as Record<string, unknown>;
+  const types = a["@type"];
+  const isOrg =
+    types === "Organization" ||
+    (Array.isArray(types) && types.includes("Organization"));
+  if (!isOrg || typeof a.name !== "string") return "";
+  return a.name.trim();
+}
+
+function outletFromNewsArticleLd(data: unknown): string {
+  if (!data || typeof data !== "object") return "";
+  const o = data as Record<string, unknown>;
+  const graph = o["@graph"];
+  if (Array.isArray(graph)) {
+    for (const node of graph) {
+      const t = outletFromSingleNewsArticleLd(node);
+      if (t) return t;
+    }
+  }
+  return outletFromSingleNewsArticleLd(data);
+}
+
+function outletFromSingleNewsArticleLd(data: unknown): string {
+  if (!data || typeof data !== "object") return "";
+  const o = data as Record<string, unknown>;
+  const types = o["@type"];
+  const isNews =
+    types === "NewsArticle" ||
+    (Array.isArray(types) && types.includes("NewsArticle"));
+  if (!isNews) return "";
+  const author = o.author;
+  if (Array.isArray(author)) {
+    for (const a of author) {
+      const name = orgNameFromLdAuthor(a);
+      if (name) return name;
+    }
+    return "";
+  }
+  return orgNameFromLdAuthor(author);
+}
+
+/** 記事ページの JSON-LD（NewsArticle.author）から配信元名を得る */
+function extractOutletFromArticleHtml(html: string): string {
+  const $ = cheerio.load(html);
+  const scripts = $('script[type="application/ld+json"]');
+  for (let i = 0; i < scripts.length; i++) {
+    const raw = $(scripts[i]!).html();
+    if (!raw) continue;
+    try {
+      const data = JSON.parse(raw) as unknown;
+      const outlet = outletFromNewsArticleLd(data);
+      if (outlet) return outlet;
+    } catch {
+      /* ignore */
+    }
+  }
+  return "";
+}
+
 function extractArticleBody(html: string): string {
   const $ = cheerio.load(html);
   const root = $("div.article_body").first();
@@ -130,12 +191,17 @@ function normalizeBodyText(raw: string): string {
   return t.replace(/\n{3,}/g, "\n\n").trim();
 }
 
-async function fetchArticleBody(url: string): Promise<string> {
+async function fetchArticleBodyAndOutlet(
+  url: string,
+): Promise<{ body: string; outlet: string }> {
   try {
     const html = await fetchHtml(url);
-    return extractArticleBody(html);
+    return {
+      body: extractArticleBody(html),
+      outlet: extractOutletFromArticleHtml(html),
+    };
   } catch {
-    return "";
+    return { body: "", outlet: "" };
   }
 }
 
@@ -145,7 +211,9 @@ async function attachBodies(items: NewsItem[]): Promise<void> {
     while (idx < items.length) {
       const i = idx++;
       const item = items[i]!;
-      item.body = await fetchArticleBody(item.url);
+      const { body, outlet } = await fetchArticleBodyAndOutlet(item.url);
+      item.body = body;
+      if (!item.outlet && outlet) item.outlet = outlet;
     }
   }
   const workers = Array.from({ length: BODY_FETCH_CONCURRENCY }, () =>
