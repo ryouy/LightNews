@@ -46,6 +46,15 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+Before deploying, verify that Next.js can build a production bundle:
+
+```bash
+npm run build
+npm run start
+```
+
+Stop the development server before starting the production server if both use the same port.
+
 ---
 
 ## Deploy on Vercel
@@ -67,3 +76,9 @@ Review each provider’s terms and crawler policy before you run this in product
 ## License
 
 Follow whatever license ships with the repository. News and weather content remain with their respective publishers.
+
+## Operating notes
+
+- News and weather data depend on third-party websites, so parsing can break when their HTML layout changes.
+- A successful local build does not guarantee external sources will respond at runtime; verify both news and weather pages after deployment.
+- Dynamic rendering may require network requests at page-open time, especially noticeable on low-bandwidth connections.
